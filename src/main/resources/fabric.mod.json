@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "thirdpersonmod",
+  "version": "${version}",
+  "name": "ThirdPersonMod",
+  "description": "a simple mod to check player's hypixel bedwars stats",
+  "authors": [],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "icon": "assets/thirdpersonmod/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "fabric-datagen": [
+      "org.exmple.thirdpersonmod.client.ThirdpersonmodDataGenerator"
+    ],
+    "client": [
+      "org.exmple.thirdpersonmod.client.ThirdpersonmodClient"
+    ],
+    "main": [
+      "org.exmple.thirdpersonmod.Thirdpersonmod"
+    ]
+  },
+  "mixins": [
+    "thirdpersonmod.mixins.json",
+    {
+      "config": "thirdpersonmod.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
