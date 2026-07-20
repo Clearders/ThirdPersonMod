@@ -2,26 +2,18 @@
   "schemaVersion": 1,
   "id": "thirdpersonmod",
   "version": "${version}",
-  "name": "ThirdPersonMod",
-  "description": "a simple mod to check player's hypixel bedwars stats",
+  "name": "Cinematic Shoulder Camera",
+  "description": "A pure client-side cinematic over-the-shoulder camera for third-person back view.",
   "authors": [],
   "contact": {},
   "license": "All-Rights-Reserved",
-  "icon": "assets/thirdpersonmod/icon.png",
   "environment": "client",
   "entrypoints": {
-    "fabric-datagen": [
-      "org.exmple.thirdpersonmod.client.ThirdpersonmodDataGenerator"
-    ],
     "client": [
-      "org.exmple.thirdpersonmod.client.ThirdpersonmodClient"
-    ],
-    "main": [
-      "org.exmple.thirdpersonmod.Thirdpersonmod"
+      "dev.thirdpersonmod.ShoulderCameraClient"
     ]
   },
   "mixins": [
-    "thirdpersonmod.mixins.json",
     {
       "config": "thirdpersonmod.client.mixins.json",
       "environment": "client"
@@ -30,6 +22,7 @@
   "depends": {
     "fabricloader": ">=${loader_version}",
     "fabric-api": "*",
-    "minecraft": "${minecraft_version}"
+    "minecraft": "${minecraft_version}",
+    "java": ">=25"
   }
 }

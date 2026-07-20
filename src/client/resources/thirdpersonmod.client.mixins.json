@@ -1,9 +1,11 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "org.exmple.thirdpersonmod.mixin.client",
+  "package": "dev.thirdpersonmod.mixin",
   "compatibilityLevel": "JAVA_25",
   "client": [
+    "CameraAccessor",
+    "CameraMixin"
   ],
   "injectors": {
     "defaultRequire": 1
