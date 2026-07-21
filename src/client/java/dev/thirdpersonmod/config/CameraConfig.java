@@ -25,6 +25,34 @@ public final class CameraConfig {
     public boolean disableWhileFallFlying = true;
     public boolean debugCameraOwnership = false;
 
+    public CameraConfig copy() {
+        CameraConfig copy = new CameraConfig();
+        copy.copyFrom(this);
+        return copy;
+    }
+
+    public void copyFrom(CameraConfig other) {
+        this.enabled = other.enabled;
+        this.distance = other.distance;
+        this.shoulderOffset = other.shoulderOffset;
+        this.verticalOffset = other.verticalOffset;
+        this.minimumDistance = other.minimumDistance;
+        this.collisionRadius = other.collisionRadius;
+        this.collisionSafetyMargin = other.collisionSafetyMargin;
+        this.positionSmoothingSpeed = other.positionSmoothingSpeed;
+        this.collisionInSpeed = other.collisionInSpeed;
+        this.collisionOutSpeed = other.collisionOutSpeed;
+        this.shoulderTransitionSpeed = other.shoulderTransitionSpeed;
+        this.compositionPreset = other.compositionPreset;
+        this.defaultShoulder = other.defaultShoulder;
+        this.disableWhileRiding = other.disableWhileRiding;
+        this.disableWhileSleeping = other.disableWhileSleeping;
+        this.disableWhileSwimming = other.disableWhileSwimming;
+        this.disableWhileCrawling = other.disableWhileCrawling;
+        this.disableWhileFallFlying = other.disableWhileFallFlying;
+        this.debugCameraOwnership = other.debugCameraOwnership;
+    }
+
     public void validate() {
         this.distance = finiteClamp(this.distance, 1.0, 12.0, 3.6);
         this.shoulderOffset = finiteClamp(this.shoulderOffset, 0.0, 2.0, 0.75);

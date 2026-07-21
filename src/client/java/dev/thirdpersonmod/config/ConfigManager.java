@@ -48,6 +48,12 @@ public final class ConfigManager {
         return this.config;
     }
 
+    public void apply(CameraConfig updated) {
+        this.config.copyFrom(updated);
+        this.config.validate();
+        save();
+    }
+
     public void setEnabled(boolean enabled) {
         this.config.enabled = enabled;
         save();

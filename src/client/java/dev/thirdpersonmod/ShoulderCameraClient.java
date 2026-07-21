@@ -18,7 +18,7 @@ public final class ShoulderCameraClient implements ClientModInitializer {
         ConfigManager configManager = new ConfigManager();
         configManager.load();
         controller = new ShoulderCameraController(configManager);
-        CameraKeyBindings.register(controller);
+        CameraKeyBindings.register(controller, configManager);
         LOGGER.info("Cinematic Shoulder Camera initialized");
     }
 

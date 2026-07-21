@@ -3,6 +3,8 @@ package dev.thirdpersonmod.input;
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.thirdpersonmod.ShoulderCameraClient;
 import dev.thirdpersonmod.camera.ShoulderCameraController;
+import dev.thirdpersonmod.config.ConfigManager;
+import dev.thirdpersonmod.screen.CameraConfigScreen;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
@@ -13,7 +15,7 @@ public final class CameraKeyBindings {
     private CameraKeyBindings() {
     }
 
-    public static void register(ShoulderCameraController controller) {
+    public static void register(ShoulderCameraController controller, ConfigManager configManager) {
         KeyMapping.Category category = KeyMapping.Category.register(
             Identifier.fromNamespaceAndPath(ShoulderCameraClient.MOD_ID, "camera")
         );
@@ -23,10 +25,14 @@ public final class CameraKeyBindings {
         KeyMapping toggleShoulder = KeyMappingHelper.registerKeyMapping(
             new KeyMapping("key.thirdpersonmod.toggle_shoulder", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_P, category)
         );
+        KeyMapping openConfig = KeyMappingHelper.registerKeyMapping(
+            new KeyMapping("key.thirdpersonmod.open_config", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_I, category)
+        );
 
         ClientTickEvents.END_CLIENT_TICK.register(minecraft -> {
             boolean cameraPressed = consumeAll(toggleCamera);
             boolean shoulderPressed = consumeAll(toggleShoulder);
+            boolean configPressed = consumeAll(openConfig);
             if (minecraft.gui.screen() != null || minecraft.gui.overlay() != null) {
                 return;
             }
@@ -35,6 +41,9 @@ public final class CameraKeyBindings {
             }
             if (shoulderPressed) {
                 controller.toggleShoulder();
+            }
+            if (configPressed) {
+                minecraft.setScreenAndShow(new CameraConfigScreen(null, configManager, controller));
             }
         });
     }

@@ -49,6 +49,10 @@ public final class ShoulderCameraState {
         this.shoulder = this.shoulder.opposite();
     }
 
+    public void shoulder(ShoulderSide shoulder) {
+        this.shoulder = shoulder;
+    }
+
     public CameraOwnerState owner() {
         return this.owner;
     }

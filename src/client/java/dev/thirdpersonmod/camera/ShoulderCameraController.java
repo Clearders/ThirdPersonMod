@@ -43,6 +43,14 @@ public final class ShoulderCameraController {
         ShoulderCameraClient.LOGGER.info("Shoulder camera side: {}", this.state.shoulder());
     }
 
+    public void applyConfiguration() {
+        CameraConfig config = this.configManager.get();
+        this.state.shoulder(config.defaultShoulder);
+        if (!config.enabled) {
+            this.state.leavePlayer(CameraOwnerState.INACTIVE);
+        }
+    }
+
     public void onCameraUpdated(Camera camera, DeltaTracker deltaTracker) {
         Minecraft minecraft = Minecraft.getInstance();
         CameraConfig config = this.configManager.get();
