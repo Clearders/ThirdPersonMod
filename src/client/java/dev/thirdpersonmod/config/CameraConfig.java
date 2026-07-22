@@ -1,5 +1,6 @@
 package dev.thirdpersonmod.config;
 
+import com.google.gson.annotations.SerializedName;
 import dev.thirdpersonmod.camera.CameraMath;
 import dev.thirdpersonmod.camera.CompositionPreset;
 import dev.thirdpersonmod.camera.ShoulderSide;
@@ -12,7 +13,8 @@ public final class CameraConfig {
     public double minimumDistance = 0.35;
     public double collisionRadius = 0.14;
     public double collisionSafetyMargin = 0.1;
-    public double positionSmoothingSpeed = 14.0;
+    @SerializedName(value = "verticalSmoothingSpeed", alternate = "positionSmoothingSpeed")
+    public double verticalSmoothingSpeed = 14.0;
     public double collisionInSpeed = 32.0;
     public double collisionOutSpeed = 9.0;
     public double shoulderTransitionSpeed = 11.0;
@@ -39,7 +41,7 @@ public final class CameraConfig {
         this.minimumDistance = other.minimumDistance;
         this.collisionRadius = other.collisionRadius;
         this.collisionSafetyMargin = other.collisionSafetyMargin;
-        this.positionSmoothingSpeed = other.positionSmoothingSpeed;
+        this.verticalSmoothingSpeed = other.verticalSmoothingSpeed;
         this.collisionInSpeed = other.collisionInSpeed;
         this.collisionOutSpeed = other.collisionOutSpeed;
         this.shoulderTransitionSpeed = other.shoulderTransitionSpeed;
@@ -61,25 +63,39 @@ public final class CameraConfig {
         this.minimumDistance = Math.min(this.minimumDistance, this.distance);
         this.collisionRadius = finiteClamp(this.collisionRadius, 0.01, 0.5, 0.14);
         this.collisionSafetyMargin = finiteClamp(this.collisionSafetyMargin, 0.0, 0.5, 0.1);
-        this.positionSmoothingSpeed = finiteClamp(this.positionSmoothingSpeed, 0.0, 60.0, 14.0);
+        this.verticalSmoothingSpeed = finiteClamp(this.verticalSmoothingSpeed, 0.0, 60.0, 14.0);
         this.collisionInSpeed = finiteClamp(this.collisionInSpeed, 0.0, 60.0, 32.0);
         this.collisionOutSpeed = finiteClamp(this.collisionOutSpeed, 0.0, 60.0, 9.0);
         this.shoulderTransitionSpeed = finiteClamp(this.shoulderTransitionSpeed, 0.0, 60.0, 11.0);
-        if (this.compositionPreset == null) {
-            this.compositionPreset = CompositionPreset.CINEMATIC_RIGHT_SHOULDER;
-        }
         if (this.defaultShoulder == null) {
-            this.defaultShoulder = this.compositionPreset.shoulder();
+            this.defaultShoulder = this.compositionPreset != null && !this.compositionPreset.isCustom()
+                ? this.compositionPreset.shoulder()
+                : ShoulderSide.RIGHT;
         }
+        reconcilePreset();
     }
 
     public void applyPreset(CompositionPreset preset) {
         this.compositionPreset = preset == null ? CompositionPreset.CINEMATIC_RIGHT_SHOULDER : preset;
+        if (this.compositionPreset.isCustom()) {
+            return;
+        }
         this.distance = this.compositionPreset.distance();
         this.shoulderOffset = this.compositionPreset.shoulderOffset();
         this.verticalOffset = this.compositionPreset.verticalOffset();
         this.defaultShoulder = this.compositionPreset.shoulder();
         validate();
+    }
+
+    public CompositionPreset reconcilePreset() {
+        for (CompositionPreset preset : CompositionPreset.values()) {
+            if (preset.matches(this.distance, this.shoulderOffset, this.verticalOffset, this.defaultShoulder)) {
+                this.compositionPreset = preset;
+                return preset;
+            }
+        }
+        this.compositionPreset = CompositionPreset.CUSTOM;
+        return this.compositionPreset;
     }
 
     private static double finiteClamp(double value, double minimum, double maximum, double fallback) {

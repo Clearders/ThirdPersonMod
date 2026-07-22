@@ -22,28 +22,32 @@ public final class ShoulderCameraController {
 
     private ClientLevel lastLevel;
     private LocalPlayer lastPlayer;
+    private CameraConfig previewConfig;
 
     public ShoulderCameraController(ConfigManager configManager) {
         this.configManager = configManager;
         this.state = new ShoulderCameraState(configManager.get().defaultShoulder);
     }
 
-    public void toggleEnabled() {
+    public boolean toggleEnabled() {
         boolean enabled = !this.configManager.get().enabled;
         this.configManager.setEnabled(enabled);
         if (!enabled) {
             this.state.leavePlayer(CameraOwnerState.INACTIVE);
         }
         ShoulderCameraClient.LOGGER.info("Cinematic shoulder camera {}", enabled ? "enabled" : "disabled");
+        return enabled;
     }
 
-    public void toggleShoulder() {
+    public ShoulderSide toggleShoulder() {
         this.state.toggleShoulder();
         this.configManager.setDefaultShoulder(this.state.shoulder());
         ShoulderCameraClient.LOGGER.info("Shoulder camera side: {}", this.state.shoulder());
+        return this.state.shoulder();
     }
 
     public void applyConfiguration() {
+        this.previewConfig = null;
         CameraConfig config = this.configManager.get();
         this.state.shoulder(config.defaultShoulder);
         if (!config.enabled) {
@@ -51,9 +55,28 @@ public final class ShoulderCameraController {
         }
     }
 
+    public void previewConfiguration(CameraConfig draft) {
+        CameraConfig validated = draft.copy();
+        validated.validate();
+        this.previewConfig = validated;
+        this.state.shoulder(validated.defaultShoulder);
+        if (!validated.enabled) {
+            this.state.leavePlayer(CameraOwnerState.INACTIVE);
+        }
+    }
+
+    public void cancelConfigurationPreview() {
+        this.previewConfig = null;
+        CameraConfig persisted = this.configManager.get();
+        this.state.shoulder(persisted.defaultShoulder);
+        if (!persisted.enabled) {
+            this.state.leavePlayer(CameraOwnerState.INACTIVE);
+        }
+    }
+
     public void onCameraUpdated(Camera camera, DeltaTracker deltaTracker) {
         Minecraft minecraft = Minecraft.getInstance();
-        CameraConfig config = this.configManager.get();
+        CameraConfig config = this.previewConfig != null ? this.previewConfig : this.configManager.get();
         Entity focusedEntity = camera.entity();
 
         boolean lifecycleChanged = minecraft.level != this.lastLevel || minecraft.player != this.lastPlayer;
@@ -108,7 +131,7 @@ public final class ShoulderCameraController {
             CameraMath.smooth(
                 this.state.currentVerticalOffset(),
                 config.verticalOffset,
-                config.positionSmoothingSpeed,
+                config.verticalSmoothingSpeed,
                 deltaSeconds
             )
         );

@@ -13,6 +13,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -25,6 +26,9 @@ public final class CameraConfigScreen extends Screen {
     private final ShoulderCameraController controller;
     private CameraConfig working;
     private Page page = Page.CAMERA;
+    private CycleButton<CompositionPreset> presetButton;
+    private boolean previewActive;
+    private boolean finished;
 
     public CameraConfigScreen(
         Screen parent,
@@ -40,6 +44,10 @@ public final class CameraConfigScreen extends Screen {
 
     @Override
     protected void init() {
+        this.presetButton = null;
+        this.controller.previewConfiguration(this.working);
+        this.previewActive = true;
+
         int contentWidth = Math.min(410, this.width - 20);
         int left = (this.width - contentWidth) / 2;
         int tabWidth = contentWidth / Page.values().length;
@@ -77,6 +85,7 @@ public final class CameraConfigScreen extends Screen {
             Component.translatable("config.thirdpersonmod.reset"),
             button -> {
                 this.working = new CameraConfig();
+                previewWorking();
                 rebuildWidgets();
             }
         ).bounds(footerLeft, footerY, smallWidth, WIDGET_HEIGHT).build());
@@ -92,65 +101,119 @@ public final class CameraConfigScreen extends Screen {
 
     private void addCameraOptions(int left, int right, int width, int top) {
         addBoolean(left, top, width, "config.thirdpersonmod.enabled", this.working.enabled,
-            value -> this.working.enabled = value);
-        addEnum(right, top, width, "config.thirdpersonmod.preset", this.working.compositionPreset,
+            value -> {
+                this.working.enabled = value;
+                previewWorking();
+            });
+        this.presetButton = addEnum(
+            right, top, width, "config.thirdpersonmod.preset", this.working.compositionPreset,
             CompositionPreset.values(), this::applyPreset, "config.thirdpersonmod.preset.");
 
         addEnum(left, row(top, 1), width, "config.thirdpersonmod.shoulder", this.working.defaultShoulder,
-            ShoulderSide.values(), value -> this.working.defaultShoulder = value, "config.thirdpersonmod.shoulder.");
+            ShoulderSide.values(), value -> {
+                this.working.defaultShoulder = value;
+                previewWorking();
+            }, "config.thirdpersonmod.shoulder.");
         addSlider(right, row(top, 1), width, "config.thirdpersonmod.distance",
-            1.0, 12.0, this.working.distance, 2, value -> this.working.distance = value);
+            1.0, 12.0, this.working.distance, 2, value -> {
+                this.working.distance = value;
+                previewWorking();
+            });
 
         addSlider(left, row(top, 2), width, "config.thirdpersonmod.shoulder_offset",
-            0.0, 2.0, this.working.shoulderOffset, 2, value -> this.working.shoulderOffset = value);
+            0.0, 2.0, this.working.shoulderOffset, 2, value -> {
+                this.working.shoulderOffset = value;
+                previewWorking();
+            });
         addSlider(right, row(top, 2), width, "config.thirdpersonmod.vertical_offset",
-            -1.0, 3.0, this.working.verticalOffset, 2, value -> this.working.verticalOffset = value);
+            -1.0, 3.0, this.working.verticalOffset, 2, value -> {
+                this.working.verticalOffset = value;
+                previewWorking();
+            });
 
-        addSlider(left, row(top, 3), width, "config.thirdpersonmod.position_smoothing",
-            0.0, 60.0, this.working.positionSmoothingSpeed, 1,
-            value -> this.working.positionSmoothingSpeed = value);
+        addSlider(left, row(top, 3), width, "config.thirdpersonmod.vertical_smoothing",
+            0.0, 60.0, this.working.verticalSmoothingSpeed, 1, value -> {
+                this.working.verticalSmoothingSpeed = value;
+                previewWorking();
+            });
         addSlider(right, row(top, 3), width, "config.thirdpersonmod.shoulder_transition",
-            0.0, 60.0, this.working.shoulderTransitionSpeed, 1,
-            value -> this.working.shoulderTransitionSpeed = value);
+            0.0, 60.0, this.working.shoulderTransitionSpeed, 1, value -> {
+                this.working.shoulderTransitionSpeed = value;
+                previewWorking();
+            });
     }
 
     private void addCollisionOptions(int left, int right, int width, int top) {
         addSlider(left, top, width, "config.thirdpersonmod.minimum_distance",
-            0.1, 2.0, this.working.minimumDistance, 2, value -> this.working.minimumDistance = value);
+            0.1, 2.0, this.working.minimumDistance, 2, value -> {
+                this.working.minimumDistance = value;
+                previewWorking();
+            });
         addSlider(right, top, width, "config.thirdpersonmod.collision_radius",
-            0.01, 0.5, this.working.collisionRadius, 2, value -> this.working.collisionRadius = value);
+            0.01, 0.5, this.working.collisionRadius, 2, value -> {
+                this.working.collisionRadius = value;
+                previewWorking();
+            });
         addSlider(left, row(top, 1), width, "config.thirdpersonmod.safety_margin",
-            0.0, 0.5, this.working.collisionSafetyMargin, 2,
-            value -> this.working.collisionSafetyMargin = value);
+            0.0, 0.5, this.working.collisionSafetyMargin, 2, value -> {
+                this.working.collisionSafetyMargin = value;
+                previewWorking();
+            });
         addSlider(right, row(top, 1), width, "config.thirdpersonmod.collision_in",
-            0.0, 60.0, this.working.collisionInSpeed, 1, value -> this.working.collisionInSpeed = value);
+            0.0, 60.0, this.working.collisionInSpeed, 1, value -> {
+                this.working.collisionInSpeed = value;
+                previewWorking();
+            });
         addSlider(left, row(top, 2), width, "config.thirdpersonmod.collision_out",
-            0.0, 60.0, this.working.collisionOutSpeed, 1, value -> this.working.collisionOutSpeed = value);
+            0.0, 60.0, this.working.collisionOutSpeed, 1, value -> {
+                this.working.collisionOutSpeed = value;
+                previewWorking();
+            });
     }
 
     private void addBehaviorOptions(int left, int right, int width, int top) {
         addBoolean(left, top, width, "config.thirdpersonmod.disable_riding", this.working.disableWhileRiding,
-            value -> this.working.disableWhileRiding = value);
+            value -> {
+                this.working.disableWhileRiding = value;
+                previewWorking();
+            });
         addBoolean(right, top, width, "config.thirdpersonmod.disable_sleeping", this.working.disableWhileSleeping,
-            value -> this.working.disableWhileSleeping = value);
+            value -> {
+                this.working.disableWhileSleeping = value;
+                previewWorking();
+            });
         addBoolean(left, row(top, 1), width, "config.thirdpersonmod.disable_swimming",
-            this.working.disableWhileSwimming, value -> this.working.disableWhileSwimming = value);
+            this.working.disableWhileSwimming, value -> {
+                this.working.disableWhileSwimming = value;
+                previewWorking();
+            });
         addBoolean(right, row(top, 1), width, "config.thirdpersonmod.disable_crawling",
-            this.working.disableWhileCrawling, value -> this.working.disableWhileCrawling = value);
+            this.working.disableWhileCrawling, value -> {
+                this.working.disableWhileCrawling = value;
+                previewWorking();
+            });
         addBoolean(left, row(top, 2), width, "config.thirdpersonmod.disable_fall_flying",
-            this.working.disableWhileFallFlying, value -> this.working.disableWhileFallFlying = value);
+            this.working.disableWhileFallFlying, value -> {
+                this.working.disableWhileFallFlying = value;
+                previewWorking();
+            });
         addBoolean(right, row(top, 2), width, "config.thirdpersonmod.debug",
-            this.working.debugCameraOwnership, value -> this.working.debugCameraOwnership = value);
+            this.working.debugCameraOwnership, value -> {
+                this.working.debugCameraOwnership = value;
+                previewWorking();
+            });
     }
 
     private void addBoolean(int x, int y, int width, String key, boolean value, Consumer<Boolean> setter) {
-        addRenderableWidget(CycleButton.onOffBuilder(value).create(
+        CycleButton<Boolean> button = CycleButton.onOffBuilder(value).create(
             x, y, width, WIDGET_HEIGHT, Component.translatable(key),
-            (button, updated) -> setter.accept(updated)
-        ));
+            (cycleButton, updated) -> setter.accept(updated)
+        );
+        button.setTooltip(Tooltip.create(Component.translatable(key + ".tooltip")));
+        addRenderableWidget(button);
     }
 
-    private <T> void addEnum(
+    private <T> CycleButton<T> addEnum(
         int x,
         int y,
         int width,
@@ -160,13 +223,16 @@ public final class CameraConfigScreen extends Screen {
         Consumer<T> setter,
         String valueKeyPrefix
     ) {
-        addRenderableWidget(CycleButton.<T>builder(
+        CycleButton<T> button = CycleButton.<T>builder(
             item -> Component.translatable(valueKeyPrefix + item.toString().toLowerCase(Locale.ROOT)),
             value
         ).withValues(Arrays.asList(values)).create(
             x, y, width, WIDGET_HEIGHT, Component.translatable(key),
-            (button, updated) -> setter.accept(updated)
-        ));
+            (cycleButton, updated) -> setter.accept(updated)
+        );
+        button.setTooltip(Tooltip.create(Component.translatable(key + ".tooltip")));
+        addRenderableWidget(button);
+        return button;
     }
 
     private void addSlider(
@@ -180,23 +246,41 @@ public final class CameraConfigScreen extends Screen {
         int decimals,
         DoubleConsumer setter
     ) {
-        addRenderableWidget(new NumericSlider(
+        NumericSlider slider = new NumericSlider(
             x, y, width, key, minimum, maximum, value, decimals, setter
-        ));
+        );
+        slider.setTooltip(Tooltip.create(Component.translatable(key + ".tooltip")));
+        addRenderableWidget(slider);
     }
 
     private void applyPreset(CompositionPreset preset) {
         this.working.applyPreset(preset);
+        previewWorking();
         rebuildWidgets();
+    }
+
+    private void previewWorking() {
+        this.working.validate();
+        this.controller.previewConfiguration(this.working);
+        if (this.presetButton != null) {
+            this.presetButton.setValue(this.working.compositionPreset);
+        }
     }
 
     private void saveAndClose() {
         this.configManager.apply(this.working);
         this.controller.applyConfiguration();
+        this.previewActive = false;
+        this.finished = true;
         this.minecraft.setScreenAndShow(this.parent);
     }
 
     private void closeWithoutSaving() {
+        if (!this.finished) {
+            this.controller.cancelConfigurationPreview();
+            this.previewActive = false;
+            this.finished = true;
+        }
         this.minecraft.setScreenAndShow(this.parent);
     }
 
@@ -206,9 +290,26 @@ public final class CameraConfigScreen extends Screen {
     }
 
     @Override
+    public void removed() {
+        if (this.previewActive && !this.finished) {
+            this.controller.cancelConfigurationPreview();
+            this.previewActive = false;
+            this.finished = true;
+        }
+        super.removed();
+    }
+
+    @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
         graphics.centeredText(this.font, this.title, this.width / 2, 10, 0xFFFFFFFF);
+        graphics.centeredText(
+            this.font,
+            Component.translatable("config.thirdpersonmod.preview_notice"),
+            this.width / 2,
+            this.height - 39,
+            0xFFB0B0B0
+        );
     }
 
     private static int row(int top, int row) {

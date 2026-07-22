@@ -18,8 +18,11 @@ public final class CameraMath {
     }
 
     public static double exponentialFactor(double speed, double deltaSeconds) {
-        if (speed <= 0.0 || deltaSeconds <= 0.0) {
+        if (deltaSeconds <= 0.0) {
             return 0.0;
+        }
+        if (speed <= 0.0) {
+            return 1.0;
         }
         return 1.0 - Math.exp(-speed * deltaSeconds);
     }

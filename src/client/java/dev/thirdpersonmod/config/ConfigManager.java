@@ -61,10 +61,12 @@ public final class ConfigManager {
 
     public void setDefaultShoulder(ShoulderSide shoulder) {
         this.config.defaultShoulder = shoulder;
+        this.config.reconcilePreset();
         save();
     }
 
     public void save() {
+        this.config.validate();
         Path temporaryPath = this.configPath.resolveSibling(this.configPath.getFileName() + ".tmp");
         try {
             Files.createDirectories(this.configPath.getParent());

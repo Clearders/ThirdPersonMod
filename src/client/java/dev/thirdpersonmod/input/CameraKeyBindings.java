@@ -3,11 +3,15 @@ package dev.thirdpersonmod.input;
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.thirdpersonmod.ShoulderCameraClient;
 import dev.thirdpersonmod.camera.ShoulderCameraController;
+import dev.thirdpersonmod.camera.ShoulderSide;
 import dev.thirdpersonmod.config.ConfigManager;
 import dev.thirdpersonmod.screen.CameraConfigScreen;
+import java.util.Locale;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 
@@ -37,10 +41,23 @@ public final class CameraKeyBindings {
                 return;
             }
             if (cameraPressed) {
-                controller.toggleEnabled();
+                boolean enabled = controller.toggleEnabled();
+                showStatus(
+                    minecraft,
+                    Component.translatable(enabled
+                        ? "message.thirdpersonmod.camera.enabled"
+                        : "message.thirdpersonmod.camera.disabled")
+                );
             }
             if (shoulderPressed) {
-                controller.toggleShoulder();
+                ShoulderSide shoulder = controller.toggleShoulder();
+                showStatus(
+                    minecraft,
+                    Component.translatable(
+                        "message.thirdpersonmod.shoulder",
+                        Component.translatable("config.thirdpersonmod.shoulder." + shoulder.name().toLowerCase(Locale.ROOT))
+                    )
+                );
             }
             if (configPressed) {
                 minecraft.setScreenAndShow(new CameraConfigScreen(null, configManager, controller));
@@ -54,5 +71,11 @@ public final class CameraKeyBindings {
             pressed = true;
         }
         return pressed;
+    }
+
+    private static void showStatus(Minecraft minecraft, Component message) {
+        if (minecraft.player != null) {
+            minecraft.player.sendOverlayMessage(message);
+        }
     }
 }

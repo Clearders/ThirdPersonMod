@@ -32,7 +32,7 @@ GUI 或覆盖层打开时不会触发这些动作。
 
 首次启动会在 Fabric 配置目录创建 `thirdpersonmod.json`。JSON 损坏、根节点为空或枚举非法时会记录清晰错误并使用安全默认值，不会阻止游戏启动。
 
-游戏中按 `I` 可直接修改全部配置。界面分为“相机”“碰撞”和“行为”三页；“完成”会校验、即时应用并写入 JSON，“取消”不会保存，“重置”会先恢复界面中的默认值，仍需点击“完成”才会保存。
+游戏中按 `I` 可直接修改全部配置。界面分为“相机”“碰撞”和“行为”三页，所有修改都会实时预览；“完成”会校验、应用并写入 JSON，“取消”或 `Esc` 会恢复已保存的设置。“重置”只会预览默认值，仍需点击“完成”才会保存。所有选项都提供悬停说明。
 
 ```json
 {
@@ -43,7 +43,7 @@ GUI 或覆盖层打开时不会触发这些动作。
   "minimumDistance": 0.35,
   "collisionRadius": 0.14,
   "collisionSafetyMargin": 0.1,
-  "positionSmoothingSpeed": 14.0,
+  "verticalSmoothingSpeed": 14.0,
   "collisionInSpeed": 32.0,
   "collisionOutSpeed": 9.0,
   "shoulderTransitionSpeed": 11.0,
@@ -65,8 +65,11 @@ GUI 或覆盖层打开时不会触发这些动作。
 - `COMPACT_RIGHT_SHOULDER`
 - `COMPACT_LEFT_SHOULDER`
 - `VANILLA_SAFE`
+- `CUSTOM`
 
-预设提供一组可应用的基准值；JSON 中的 `distance`、`shoulderOffset` 和 `verticalOffset` 是最终可覆盖值。左右肩运行时切换会保存 `defaultShoulder`。
+预设提供一组可应用的基准值；JSON 中的 `distance`、`shoulderOffset`、`verticalOffset` 和 `defaultShoulder` 是最终值。手动修改后会自动显示 `CUSTOM`，参数重新与某个预设完全一致时也会自动识别该预设。左右肩运行时切换会保存 `defaultShoulder`。旧配置中的 `positionSmoothingSpeed` 会继续读取，并在下次保存时迁移为 `verticalSmoothingSpeed`。
+
+所有平滑速度都以“数值越大、响应越快”为准；`0` 表示不使用平滑并立即应用目标值，而不是冻结相机状态。
 
 `debugCameraOwnership` 启用后，只在所有权状态或实体类型变化时记录 camera entity、focused entity、Tweakeroo 是否加载和外部相机检测结果，不会逐帧刷屏。
 
@@ -76,10 +79,13 @@ GUI 或覆盖层打开时不会触发这些动作。
 
 ## 构建
 
-需要 Java 25：
+Gradle 本身需要使用 Java 17 或更高版本启动，项目会明确选择 Java 25 工具链来编译和运行 Minecraft。若系统默认 `java` 仍指向 Java 8，请先设置 `JAVA_HOME`；例如本机可使用 JDK 21 启动 Gradle：
 
-```text
-gradlew.bat build
+```powershell
+$env:JAVA_HOME = 'C:\Program Files\Java\jdk-21'
+$env:Path = "$env:JAVA_HOME\bin;$env:Path"
+./gradlew.bat test
+./gradlew.bat build
 ```
 
 输出 JAR 位于 `build/libs/thirdpersonmod-1.0.0.jar`。
