@@ -27,6 +27,7 @@ class CameraConfigTest {
         config.shoulderTransitionSpeed = -100.0;
         config.compositionPreset = null;
         config.defaultShoulder = null;
+        config.motionStrength = Double.NaN;
 
         config.validate();
 
@@ -42,6 +43,7 @@ class CameraConfigTest {
         assertEquals(0.0, config.shoulderTransitionSpeed);
         assertEquals(ShoulderSide.RIGHT, config.defaultShoulder);
         assertEquals(CompositionPreset.CUSTOM, config.compositionPreset);
+        assertEquals(0.35, config.motionStrength);
     }
 
     @Test
@@ -89,5 +91,35 @@ class CameraConfigTest {
         assertEquals(1.1, config.shoulderOffset);
         assertEquals(-0.2, config.verticalOffset);
         assertEquals(CompositionPreset.CUSTOM, config.compositionPreset);
+    }
+
+    @Test
+    void oldJsonReceivesNewPresentationDefaults() {
+        CameraConfig config = GSON.fromJson("{\"distance\":4.5}", CameraConfig.class);
+        config.validate();
+
+        assertTrue(config.cinematicMotionEnabled);
+        assertEquals(0.35, config.motionStrength);
+        assertTrue(config.dynamicFovEnabled);
+        assertTrue(config.focusWhileAiming);
+        assertTrue(config.correctedCrosshairEnabled);
+    }
+
+    @Test
+    void copyIncludesPresentationSettings() {
+        CameraConfig config = new CameraConfig();
+        config.cinematicMotionEnabled = false;
+        config.motionStrength = 0.8;
+        config.dynamicFovEnabled = false;
+        config.focusWhileAiming = false;
+        config.correctedCrosshairEnabled = false;
+
+        CameraConfig copy = config.copy();
+
+        assertFalse(copy.cinematicMotionEnabled);
+        assertEquals(0.8, copy.motionStrength);
+        assertFalse(copy.dynamicFovEnabled);
+        assertFalse(copy.focusWhileAiming);
+        assertFalse(copy.correctedCrosshairEnabled);
     }
 }

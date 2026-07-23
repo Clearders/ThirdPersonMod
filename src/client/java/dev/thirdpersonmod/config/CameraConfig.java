@@ -26,6 +26,11 @@ public final class CameraConfig {
     public boolean disableWhileCrawling = true;
     public boolean disableWhileFallFlying = true;
     public boolean debugCameraOwnership = false;
+    public boolean cinematicMotionEnabled = true;
+    public double motionStrength = 0.35;
+    public boolean dynamicFovEnabled = true;
+    public boolean focusWhileAiming = true;
+    public boolean correctedCrosshairEnabled = true;
 
     public CameraConfig copy() {
         CameraConfig copy = new CameraConfig();
@@ -53,6 +58,11 @@ public final class CameraConfig {
         this.disableWhileCrawling = other.disableWhileCrawling;
         this.disableWhileFallFlying = other.disableWhileFallFlying;
         this.debugCameraOwnership = other.debugCameraOwnership;
+        this.cinematicMotionEnabled = other.cinematicMotionEnabled;
+        this.motionStrength = other.motionStrength;
+        this.dynamicFovEnabled = other.dynamicFovEnabled;
+        this.focusWhileAiming = other.focusWhileAiming;
+        this.correctedCrosshairEnabled = other.correctedCrosshairEnabled;
     }
 
     public void validate() {
@@ -67,6 +77,7 @@ public final class CameraConfig {
         this.collisionInSpeed = finiteClamp(this.collisionInSpeed, 0.0, 60.0, 32.0);
         this.collisionOutSpeed = finiteClamp(this.collisionOutSpeed, 0.0, 60.0, 9.0);
         this.shoulderTransitionSpeed = finiteClamp(this.shoulderTransitionSpeed, 0.0, 60.0, 11.0);
+        this.motionStrength = finiteClamp(this.motionStrength, 0.0, 1.0, 0.35);
         if (this.defaultShoulder == null) {
             this.defaultShoulder = this.compositionPreset != null && !this.compositionPreset.isCustom()
                 ? this.compositionPreset.shoulder()

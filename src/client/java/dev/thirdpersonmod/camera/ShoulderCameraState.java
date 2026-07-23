@@ -7,6 +7,9 @@ public final class ShoulderCameraState {
     private double currentShoulderOffset;
     private double currentDistance;
     private double currentVerticalOffset;
+    private double movementBlend;
+    private double focusBlend;
+    private double fovOffsetDegrees;
     private boolean initialized;
 
     public ShoulderCameraState(ShoulderSide shoulder) {
@@ -42,6 +45,9 @@ public final class ShoulderCameraState {
         this.currentShoulderOffset = 0.0;
         this.currentDistance = 0.0;
         this.currentVerticalOffset = 0.0;
+        this.movementBlend = 0.0;
+        this.focusBlend = 0.0;
+        this.fovOffsetDegrees = 0.0;
         this.initialized = false;
     }
 
@@ -91,5 +97,29 @@ public final class ShoulderCameraState {
 
     public boolean initialized() {
         return this.initialized;
+    }
+
+    public double movementBlend() {
+        return this.movementBlend;
+    }
+
+    public void movementBlend(double value) {
+        this.movementBlend = value;
+    }
+
+    public double focusBlend() {
+        return this.focusBlend;
+    }
+
+    public void focusBlend(double value) {
+        this.focusBlend = value;
+    }
+
+    public double fovOffsetDegrees() {
+        return this.fovOffsetDegrees;
+    }
+
+    public void fovOffsetDegrees(double value) {
+        this.fovOffsetDegrees = value;
     }
 }

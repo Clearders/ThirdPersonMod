@@ -2,7 +2,7 @@
 
 面向 Minecraft Java Edition 26.2、Fabric Loader 和 Java 25 的纯客户端第三人称越肩相机 Mod。
 
-它只在第三人称后视中改写 `Camera` 的最终渲染位置，不修改玩家坐标、速度、yaw、pitch、头部或身体旋转，也不修改移动输入、鼠标输入、准星、`hitResult`、攻击、挖掘、放置、实体交互或服务器逻辑。项目没有服务端入口点、网络数据包或 OpenGL 调用，可连接未安装本 Mod 的原版/Fabric 服务器，并适用于 Minecraft 的 OpenGL 与实验性 Vulkan 后端。
+它只在第三人称后视中改写 `Camera` 的渲染位置、为最终视野增加可关闭的轻微动态偏移，并把原版玩家眼睛射线的目标投影成 HUD 准星。不修改玩家坐标、速度、yaw、pitch、头部或身体旋转，也不修改移动输入、鼠标输入、`hitResult`、攻击、挖掘、放置、实体交互或服务器逻辑。项目没有服务端入口点、网络数据包或 OpenGL 调用，可连接未安装本 Mod 的原版/Fabric 服务器，并适用于 Minecraft 的 OpenGL 与实验性 Vulkan 后端。
 
 “科幻电影式越肩视角”只描述相机构图与运动手感。本项目不包含或添加任何《星球大战》角色、名称、武器、Logo、音乐、音效、UI 或其他素材。
 
@@ -14,6 +14,8 @@
 - 五射线（中心与四角）近似相机体积碰撞。进墙方向使用硬安全上限，离墙方向指数平滑恢复。
 - 碰撞缩短距离时按距离比例衰减肩偏移，使构图从完整越肩逐步退化为安全的近距离背后视角。
 - 左右肩、垂直偏移和距离恢复使用基于实际帧间隔的指数平滑；yaw/pitch 不做额外平滑。
+- 默认启用轻微的电影式运动：速度提高时相机平滑拉远并小幅增加视野；使用弓、弩、三叉戟、长矛、盾牌或望远镜时收紧构图。
+- 校正准星只显示原版玩家眼睛射线的实际目标；目标位于屏幕后方或画面外时隐藏，不会改变瞄准与交互结果。
 - 第一人称、第三人称正面、睡觉（默认）、骑乘（默认）、爬行（默认）和鞘翅飞行（默认）保持原版行为。
 
 禁用 Mod 总开关后，从下一次相机更新起不再写入相机位置，原版相机立即恢复。
@@ -32,7 +34,7 @@ GUI 或覆盖层打开时不会触发这些动作。
 
 首次启动会在 Fabric 配置目录创建 `thirdpersonmod.json`。JSON 损坏、根节点为空或枚举非法时会记录清晰错误并使用安全默认值，不会阻止游戏启动。
 
-游戏中按 `I` 可直接修改全部配置。界面分为“相机”“碰撞”和“行为”三页，所有修改都会实时预览；“完成”会校验、应用并写入 JSON，“取消”或 `Esc` 会恢复已保存的设置。“重置”只会预览默认值，仍需点击“完成”才会保存。所有选项都提供悬停说明。
+游戏中按 `I` 可直接修改全部配置。界面分为“相机”“碰撞”“行为”和“运动与 HUD”四页，所有修改都会实时预览；“完成”会校验、应用并写入 JSON，“取消”或 `Esc` 会恢复已保存的设置。“重置”只会预览默认值，仍需点击“完成”才会保存。所有选项都提供悬停说明。
 
 ```json
 {
@@ -54,7 +56,12 @@ GUI 或覆盖层打开时不会触发这些动作。
   "disableWhileSwimming": false,
   "disableWhileCrawling": true,
   "disableWhileFallFlying": true,
-  "debugCameraOwnership": false
+  "debugCameraOwnership": false,
+  "cinematicMotionEnabled": true,
+  "motionStrength": 0.35,
+  "dynamicFovEnabled": true,
+  "focusWhileAiming": true,
+  "correctedCrosshairEnabled": true
 }
 ```
 
@@ -75,7 +82,7 @@ GUI 或覆盖层打开时不会触发这些动作。
 
 ## 视差说明
 
-这是视觉相机 Mod。越肩偏移会产生近距离视差，但原版准星和玩家眼睛射线仍是攻击与交互的唯一依据。相机中心不会替代玩家视线，不会修改 `hitResult`，也不会进行辅助瞄准或攻击方向修正。
+这是视觉相机 Mod。越肩偏移会产生近距离视差，玩家眼睛射线仍是攻击与交互的唯一依据。启用校正准星后，HUD 会把 `hitResult` 的世界位置投影到最终相机画面中，使显示位置与实际目标一致；它不会替代玩家视线、重算 `hitResult`、辅助瞄准或修正攻击方向。
 
 ## 构建
 
@@ -88,7 +95,7 @@ $env:Path = "$env:JAVA_HOME\bin;$env:Path"
 ./gradlew.bat build
 ```
 
-输出 JAR 位于 `build/libs/thirdpersonmod-1.0.0.jar`。
+输出 JAR 位于 `build/libs/thirdpersonmod-1.1.0.jar`。
 
 ## 26.2 API 核对
 
@@ -97,7 +104,7 @@ $env:Path = "$env:JAVA_HOME\bin;$env:Path"
 - `Camera#update(DeltaTracker)` 取代旧版本常见的带 world/entity/third-person 参数签名。
 - 当前 focused entity 通过 `Camera#entity()` 读取。
 - forward/up/left 通过 `Camera#forwardVector()`、`upVector()`、`leftVector()` 读取。
-- `Camera#setPosition(Vec3)` 仍为 protected，仅通过最小 Mixin Invoker 调用。
+- `Camera#setPosition(Vec3)` 仍为 protected，仅通过最小 Mixin Invoker 调用；位置在 `alignWithEntity` 之后、FOV 与视锥计算之前写入。
 - GUI 状态位于 `Minecraft#gui.screen()` / `overlay()`，不再是旧版公开 `Minecraft#screen` 字段。
 
 核心注入使用精确描述符 `update(Lnet/minecraft/client/DeltaTracker;)V`、默认 Mixin 优先级和强制注入要求；没有 `require = 0`。
@@ -118,6 +125,9 @@ $env:Path = "$env:JAVA_HOME\bin;$env:Path"
 - 平墙、内外墙角、楼梯、栅栏、玻璃和半砖附近逐项检查五射线碰撞。
 - 靠墙立即受安全上限约束，离墙缓慢恢复；肩位切换过程中仍不穿墙。
 - 洞穴和窄走廊中肩偏移随有效距离缩小并逐步居中。
+- 站立、步行和疾跑之间距离/FOV 平滑变化；使用瞄准类物品时构图平滑收紧。
+- 在多个 GUI 缩放与窗口宽高比下检查近距离和远距离方块/实体目标；画面外目标不显示准星。
+- 在视锥边缘转动相机，确认最终越肩位置不会造成物体过早剔除。
 
 ### Tweakeroo 0.29.2
 

@@ -5,7 +5,8 @@
   "compatibilityLevel": "JAVA_25",
   "client": [
     "CameraAccessor",
-    "CameraMixin"
+    "CameraMixin",
+    "HudMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -14,6 +14,9 @@ class ShoulderCameraStateTest {
         state.enterPlayer(3.5);
         state.currentShoulderOffset(0.75);
         state.currentVerticalOffset(0.35);
+        state.movementBlend(0.8);
+        state.focusBlend(0.4);
+        state.fovOffsetDegrees(2.0);
         assertTrue(state.initialized());
         assertEquals(CameraOwnerState.PLAYER, state.owner());
 
@@ -22,6 +25,9 @@ class ShoulderCameraStateTest {
         assertEquals(0.0, state.currentDistance());
         assertEquals(0.0, state.currentShoulderOffset());
         assertEquals(0.0, state.currentVerticalOffset());
+        assertEquals(0.0, state.movementBlend());
+        assertEquals(0.0, state.focusBlend());
+        assertEquals(0.0, state.fovOffsetDegrees());
         assertEquals(CameraOwnerState.PLAYER, state.previousOwner());
         assertEquals(CameraOwnerState.EXTERNAL, state.owner());
 

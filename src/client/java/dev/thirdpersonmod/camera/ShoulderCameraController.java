@@ -12,9 +12,22 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Pose;
+import net.minecraft.world.item.ItemUseAnimation;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.EnumSet;
+import java.util.Set;
+
 public final class ShoulderCameraController {
+    private static final Set<ItemUseAnimation> FOCUS_ANIMATIONS = EnumSet.of(
+        ItemUseAnimation.BOW,
+        ItemUseAnimation.CROSSBOW,
+        ItemUseAnimation.TRIDENT,
+        ItemUseAnimation.SPEAR,
+        ItemUseAnimation.BLOCK,
+        ItemUseAnimation.SPYGLASS
+    );
+
     private final ConfigManager configManager;
     private final ShoulderCameraState state;
     private final CameraOwnership ownership = new CameraOwnership();
@@ -74,9 +87,9 @@ public final class ShoulderCameraController {
         }
     }
 
-    public void onCameraUpdated(Camera camera, DeltaTracker deltaTracker) {
+    public void onCameraAligned(Camera camera, DeltaTracker deltaTracker) {
         Minecraft minecraft = Minecraft.getInstance();
-        CameraConfig config = this.previewConfig != null ? this.previewConfig : this.configManager.get();
+        CameraConfig config = currentConfig();
         Entity focusedEntity = camera.entity();
 
         boolean lifecycleChanged = minecraft.level != this.lastLevel || minecraft.player != this.lastPlayer;
@@ -118,7 +131,20 @@ public final class ShoulderCameraController {
         }
 
         double deltaSeconds = CameraMath.deltaSeconds(deltaTracker);
-        double targetShoulder = config.shoulderOffset * this.state.shoulder().sign();
+        updateMotion(playerSpeed(minecraft.player), isFocusActive(minecraft.player, config), config, deltaSeconds);
+        CameraMotionModel.MotionTargets motion = CameraMotionModel.targets(
+            config.distance,
+            config.shoulderOffset,
+            config.minimumDistance,
+            config.motionStrength,
+            this.state.movementBlend(),
+            this.state.focusBlend(),
+            config.cinematicMotionEnabled,
+            config.dynamicFovEnabled
+        );
+        this.state.fovOffsetDegrees(motion.fovOffsetDegrees());
+
+        double targetShoulder = motion.shoulderOffset() * this.state.shoulder().sign();
         this.state.currentShoulderOffset(
             CameraMath.smooth(
                 this.state.currentShoulderOffset(),
@@ -141,7 +167,7 @@ public final class ShoulderCameraController {
             forward,
             right,
             up,
-            config.distance,
+            motion.distance(),
             this.state.currentShoulderOffset(),
             this.state.currentVerticalOffset()
         );
@@ -152,7 +178,7 @@ public final class ShoulderCameraController {
             fullComposition,
             right,
             up,
-            config.distance,
+            motion.distance(),
             config.collisionRadius,
             config.collisionSafetyMargin
         );
@@ -170,7 +196,7 @@ public final class ShoulderCameraController {
         // The collision limit is a hard cap: smoothing must never carry the camera through a wall.
         this.state.currentDistance(Math.min(smoothedDistance, collisionLimit));
 
-        Vec3 finalPosition = adaptiveComposition(eyeAnchor, forward, right, up, config);
+        Vec3 finalPosition = adaptiveComposition(eyeAnchor, forward, right, up, config, motion.distance());
 
         // Recheck the degraded composition because reducing the lateral offset changes the swept path.
         double finalCollisionLimit = this.collision.findAvailableDistance(
@@ -186,11 +212,39 @@ public final class ShoulderCameraController {
         );
         if (finalCollisionLimit < this.state.currentDistance()) {
             this.state.currentDistance(finalCollisionLimit);
-            finalPosition = adaptiveComposition(eyeAnchor, forward, right, up, config);
+            finalPosition = adaptiveComposition(eyeAnchor, forward, right, up, config, motion.distance());
         }
 
         ((CameraAccessor) camera).thirdpersonmod$setPosition(finalPosition);
         this.ownership.logIfChanged(config.debugCameraOwnership, minecraft, focusedEntity, this.state.owner(), false);
+    }
+
+    public void onCameraUpdateFinished() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null || minecraft.player == null) {
+            transitionAway(CameraOwnerState.INACTIVE);
+            this.lastLevel = minecraft.level;
+            this.lastPlayer = minecraft.player;
+        }
+    }
+
+    public CameraPresentationState presentationState(Camera camera) {
+        Minecraft minecraft = Minecraft.getInstance();
+        CameraConfig config = currentConfig();
+        Entity focusedEntity = camera.entity();
+        boolean active = minecraft.level != null
+            && minecraft.player != null
+            && this.state.owner() == CameraOwnerState.PLAYER
+            && !this.ownership.isExternalCamera(minecraft, focusedEntity)
+            && shouldApply(minecraft, minecraft.player, config);
+        if (!active) {
+            return CameraPresentationState.INACTIVE;
+        }
+        return new CameraPresentationState(
+            true,
+            (float) this.state.fovOffsetDegrees(),
+            config.correctedCrosshairEnabled
+        );
     }
 
     private Vec3 adaptiveComposition(
@@ -198,9 +252,10 @@ public final class ShoulderCameraController {
         Vec3 forward,
         Vec3 right,
         Vec3 up,
-        CameraConfig config
+        CameraConfig config,
+        double effectiveDistance
     ) {
-        double distanceRatio = CameraMath.clamp(this.state.currentDistance() / config.distance, 0.0, 1.0);
+        double distanceRatio = CameraMath.clamp(this.state.currentDistance() / effectiveDistance, 0.0, 1.0);
         double adaptiveShoulder = this.state.currentShoulderOffset() * distanceRatio;
         return CameraMath.desiredPosition(
             eyeAnchor,
@@ -211,6 +266,49 @@ public final class ShoulderCameraController {
             adaptiveShoulder,
             this.state.currentVerticalOffset()
         );
+    }
+
+    private void updateMotion(double playerSpeed, boolean focusActive, CameraConfig config, double deltaSeconds) {
+        if (!config.cinematicMotionEnabled) {
+            this.state.movementBlend(0.0);
+            this.state.focusBlend(0.0);
+            this.state.fovOffsetDegrees(0.0);
+            return;
+        }
+
+        this.state.movementBlend(CameraMath.smooth(
+            this.state.movementBlend(),
+            CameraMotionModel.movementTarget(playerSpeed),
+            CameraMotionModel.MOVEMENT_SMOOTHING_SPEED,
+            deltaSeconds
+        ));
+        double focusSpeed = focusActive
+            ? CameraMotionModel.FOCUS_IN_SMOOTHING_SPEED
+            : CameraMotionModel.FOCUS_OUT_SMOOTHING_SPEED;
+        this.state.focusBlend(CameraMath.smooth(
+            this.state.focusBlend(),
+            focusActive ? 1.0 : 0.0,
+            focusSpeed,
+            deltaSeconds
+        ));
+    }
+
+    private CameraConfig currentConfig() {
+        return this.previewConfig != null ? this.previewConfig : this.configManager.get();
+    }
+
+    private static double playerSpeed(LocalPlayer player) {
+        Vec3 movement = player.getDeltaMovement();
+        if (player.isSwimming() || player.isFallFlying()) {
+            return movement.length();
+        }
+        return Math.sqrt(movement.x * movement.x + movement.z * movement.z);
+    }
+
+    private static boolean isFocusActive(LocalPlayer player, CameraConfig config) {
+        return config.focusWhileAiming
+            && player.isUsingItem()
+            && FOCUS_ANIMATIONS.contains(player.getUseItem().getUseAnimation());
     }
 
     private void transitionAway(CameraOwnerState owner) {

@@ -75,6 +75,7 @@ public final class CameraConfigScreen extends Screen {
             case CAMERA -> addCameraOptions(left, right, columnWidth, contentY);
             case COLLISION -> addCollisionOptions(left, right, columnWidth, contentY);
             case BEHAVIOR -> addBehaviorOptions(left, right, columnWidth, contentY);
+            case PRESENTATION -> addPresentationOptions(left, right, columnWidth, contentY);
         }
 
         int footerY = this.height - 27;
@@ -204,6 +205,34 @@ public final class CameraConfigScreen extends Screen {
             });
     }
 
+    private void addPresentationOptions(int left, int right, int width, int top) {
+        addBoolean(left, top, width, "config.thirdpersonmod.cinematic_motion",
+            this.working.cinematicMotionEnabled, value -> {
+                this.working.cinematicMotionEnabled = value;
+                previewWorking();
+            });
+        addSlider(right, top, width, "config.thirdpersonmod.motion_strength",
+            0.0, 1.0, this.working.motionStrength, 2, value -> {
+                this.working.motionStrength = value;
+                previewWorking();
+            });
+        addBoolean(left, row(top, 1), width, "config.thirdpersonmod.dynamic_fov",
+            this.working.dynamicFovEnabled, value -> {
+                this.working.dynamicFovEnabled = value;
+                previewWorking();
+            });
+        addBoolean(right, row(top, 1), width, "config.thirdpersonmod.focus_while_aiming",
+            this.working.focusWhileAiming, value -> {
+                this.working.focusWhileAiming = value;
+                previewWorking();
+            });
+        addBoolean(left, row(top, 2), width, "config.thirdpersonmod.corrected_crosshair",
+            this.working.correctedCrosshairEnabled, value -> {
+                this.working.correctedCrosshairEnabled = value;
+                previewWorking();
+            });
+    }
+
     private void addBoolean(int x, int y, int width, String key, boolean value, Consumer<Boolean> setter) {
         CycleButton<Boolean> button = CycleButton.onOffBuilder(value).create(
             x, y, width, WIDGET_HEIGHT, Component.translatable(key),
@@ -319,7 +348,8 @@ public final class CameraConfigScreen extends Screen {
     private enum Page {
         CAMERA("config.thirdpersonmod.page.camera"),
         COLLISION("config.thirdpersonmod.page.collision"),
-        BEHAVIOR("config.thirdpersonmod.page.behavior");
+        BEHAVIOR("config.thirdpersonmod.page.behavior"),
+        PRESENTATION("config.thirdpersonmod.page.presentation");
 
         private final String translationKey;
 
