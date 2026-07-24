@@ -3,6 +3,7 @@ package dev.thirdpersonmod.mixin;
 import dev.thirdpersonmod.ShoulderCameraClient;
 import dev.thirdpersonmod.camera.CameraPresentationState;
 import dev.thirdpersonmod.camera.ShoulderCameraController;
+import dev.thirdpersonmod.hud.CrosshairProjection;
 import java.util.Optional;
 import net.minecraft.client.AttackIndicatorStatus;
 import net.minecraft.client.Camera;
@@ -43,8 +44,12 @@ public abstract class HudMixin {
     private Minecraft minecraft;
 
     @Inject(
-        method = "extractCrosshair(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/DeltaTracker;)V",
-        at = @At("TAIL")
+        method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/DeltaTracker;)V",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/gui/Hud;extractCrosshair(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/DeltaTracker;)V",
+            shift = At.Shift.AFTER
+        )
     )
     private void thirdpersonmod$extractCorrectedCrosshair(
         GuiGraphicsExtractor graphics,
@@ -79,14 +84,14 @@ public abstract class HudMixin {
             return;
         }
 
-        int centerX = (int) Math.round(projected.get().x());
-        int centerY = (int) Math.round(projected.get().y());
-        if (centerX < CROSSHAIR_HALF_SIZE
-            || centerX > graphics.guiWidth() - CROSSHAIR_HALF_SIZE
-            || centerY < CROSSHAIR_HALF_SIZE
-            || centerY > graphics.guiHeight() - CROSSHAIR_HALF_SIZE) {
-            return;
-        }
+        CrosshairProjection.ScreenPoint visiblePoint = CrosshairProjection.clampToViewport(
+            projected.get(),
+            graphics.guiWidth(),
+            graphics.guiHeight(),
+            CROSSHAIR_HALF_SIZE
+        );
+        int centerX = (int) Math.round(visiblePoint.x());
+        int centerY = (int) Math.round(visiblePoint.y());
 
         graphics.nextStratum();
         graphics.blitSprite(

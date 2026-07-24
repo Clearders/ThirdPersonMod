@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Optional;
+import dev.thirdpersonmod.hud.CrosshairProjection;
 import net.minecraft.world.phys.Vec3;
 import org.junit.jupiter.api.Test;
 
@@ -45,10 +46,23 @@ class CrosshairProjectionTest {
     }
 
     @Test
-    void rejectsNearBehindAndOffscreenTargets() {
+    void rejectsNearAndBehindTargetsButKeepsOffscreenDirection() {
         assertTrue(project(new Vec3(0.0, 0.0, 0.05), 90.0, 1.0, 100, 100).isEmpty());
         assertTrue(project(new Vec3(0.0, 0.0, -10.0), 90.0, 1.0, 100, 100).isEmpty());
-        assertTrue(project(new Vec3(30.0, 0.0, 10.0), 90.0, 1.0, 100, 100).isEmpty());
+        assertTrue(project(new Vec3(30.0, 0.0, 10.0), 90.0, 1.0, 100, 100).orElseThrow().x() > 100.0);
+    }
+
+    @Test
+    void clampsOffscreenPointsInsideCrosshairSafeArea() {
+        CrosshairProjection.ScreenPoint clamped = CrosshairProjection.clampToViewport(
+            new CrosshairProjection.ScreenPoint(300.0, -50.0),
+            200,
+            100,
+            8
+        );
+
+        assertEquals(192.0, clamped.x(), EPSILON);
+        assertEquals(8.0, clamped.y(), EPSILON);
     }
 
     @Test

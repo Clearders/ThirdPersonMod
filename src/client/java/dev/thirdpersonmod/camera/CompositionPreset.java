@@ -8,6 +8,14 @@ public enum CompositionPreset {
     VANILLA_SAFE(4.0, 0.0, 0.0, ShoulderSide.RIGHT),
     CUSTOM(Double.NaN, Double.NaN, Double.NaN, null);
 
+    private static final CompositionPreset[] SELECTABLE_VALUES = {
+        CINEMATIC_RIGHT_SHOULDER,
+        CINEMATIC_LEFT_SHOULDER,
+        COMPACT_RIGHT_SHOULDER,
+        COMPACT_LEFT_SHOULDER,
+        VANILLA_SAFE
+    };
+
     private final double distance;
     private final double shoulderOffset;
     private final double verticalOffset;
@@ -38,6 +46,10 @@ public enum CompositionPreset {
 
     public boolean isCustom() {
         return this == CUSTOM;
+    }
+
+    public static CompositionPreset[] selectableValues() {
+        return SELECTABLE_VALUES.clone();
     }
 
     public boolean matches(double distance, double shoulderOffset, double verticalOffset, ShoulderSide shoulder) {

@@ -13,6 +13,12 @@ class CameraConfigTest {
     private static final Gson GSON = new Gson();
 
     @Test
+    void customPresetIsAStatusAndNotASelectableCycleEntry() {
+        assertFalse(java.util.Arrays.asList(CompositionPreset.selectableValues()).contains(CompositionPreset.CUSTOM));
+        assertEquals(CompositionPreset.VANILLA_SAFE, CompositionPreset.selectableValues()[4]);
+    }
+
+    @Test
     void validationClampsInvalidValuesAndRestoresEnums() {
         CameraConfig config = new CameraConfig();
         config.distance = Double.NaN;

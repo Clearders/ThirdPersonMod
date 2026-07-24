@@ -1,15 +1,15 @@
-package dev.thirdpersonmod.mixin;
+package dev.thirdpersonmod.hud;
 
 import java.util.Optional;
 import net.minecraft.world.phys.Vec3;
 
-final class CrosshairProjection {
+public final class CrosshairProjection {
     private static final double NEAR_PLANE = 0.05;
 
     private CrosshairProjection() {
     }
 
-    static Optional<ScreenPoint> project(
+    public static Optional<ScreenPoint> project(
         Vec3 cameraPosition,
         Vec3 targetPosition,
         Vec3 forward,
@@ -48,10 +48,7 @@ final class CrosshairProjection {
 
         double normalizedX = relative.dot(right) / (depth * tangent * framebufferAspectRatio);
         double normalizedY = relative.dot(up) / (depth * tangent);
-        if (!Double.isFinite(normalizedX)
-            || !Double.isFinite(normalizedY)
-            || Math.abs(normalizedX) > 1.0
-            || Math.abs(normalizedY) > 1.0) {
+        if (!Double.isFinite(normalizedX) || !Double.isFinite(normalizedY)) {
             return Optional.empty();
         }
 
@@ -60,10 +57,25 @@ final class CrosshairProjection {
         return Optional.of(new ScreenPoint(x, y));
     }
 
+    public static ScreenPoint clampToViewport(ScreenPoint point, int guiWidth, int guiHeight, int inset) {
+        if (guiWidth <= 0 || guiHeight <= 0 || inset < 0) {
+            throw new IllegalArgumentException("viewport dimensions and inset must be valid");
+        }
+
+        double minimumX = Math.min(inset, guiWidth / 2.0);
+        double maximumX = Math.max(guiWidth - inset, guiWidth / 2.0);
+        double minimumY = Math.min(inset, guiHeight / 2.0);
+        double maximumY = Math.max(guiHeight - inset, guiHeight / 2.0);
+        return new ScreenPoint(
+            Math.max(minimumX, Math.min(maximumX, point.x())),
+            Math.max(minimumY, Math.min(maximumY, point.y()))
+        );
+    }
+
     private static boolean finite(Vec3 vector) {
         return Double.isFinite(vector.x) && Double.isFinite(vector.y) && Double.isFinite(vector.z);
     }
 
-    record ScreenPoint(double x, double y) {
+    public record ScreenPoint(double x, double y) {
     }
 }

@@ -108,7 +108,7 @@ public final class CameraConfigScreen extends Screen {
             });
         this.presetButton = addEnum(
             right, top, width, "config.thirdpersonmod.preset", this.working.compositionPreset,
-            CompositionPreset.values(), this::applyPreset, "config.thirdpersonmod.preset.");
+            CompositionPreset.selectableValues(), this::applyPreset, "config.thirdpersonmod.preset.");
 
         addEnum(left, row(top, 1), width, "config.thirdpersonmod.shoulder", this.working.defaultShoulder,
             ShoulderSide.values(), value -> {
